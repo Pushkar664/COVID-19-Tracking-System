@@ -1,0 +1,277 @@
+/* ================================
+   GLOBAL RESET
+================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f7fb;
+  color: #1f2937;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+
+/* ================================
+   LIGHT MODE
+================================ */
+
+body {
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+
+/* ================================
+   DARK MODE
+================================ */
+
+body.dark-mode {
+  background: #111827;
+  color: #f9fafb;
+}
+
+
+/* ================================
+   DASHBOARD
+================================ */
+
+body.dark-mode .dashboard {
+  background: #111827;
+  color: #f9fafb;
+}
+
+body.dark-mode .dashboard-hero {
+  color: #ffffff;
+}
+
+body.dark-mode .global-statistics,
+body.dark-mode .global-chart-section,
+body.dark-mode .top-countries {
+  background: #111827;
+  color: #ffffff;
+}
+
+
+/* ================================
+   STATISTICS CARDS
+================================ */
+
+body.dark-mode .stat-card {
+  background: #1f2937;
+  color: #ffffff;
+  border-color: #374151;
+}
+
+body.dark-mode .stat-card h3,
+body.dark-mode .stat-card p {
+  color: #ffffff;
+}
+
+
+/* ================================
+   CHART
+================================ */
+
+body.dark-mode .chart-card {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+body.dark-mode .chart-header h2,
+body.dark-mode .chart-header p {
+  color: #ffffff;
+}
+
+body.dark-mode .recharts-text {
+  fill: #ffffff;
+}
+
+body.dark-mode .recharts-cartesian-grid line {
+  stroke: #374151;
+}
+
+
+/* ================================
+   COUNTRY PAGE
+================================ */
+
+body.dark-mode .country-page {
+  background: #111827;
+  color: #ffffff;
+}
+
+body.dark-mode .country-results-page {
+  background: #111827;
+  color: #ffffff;
+}
+
+body.dark-mode .country-card {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+body.dark-mode .country-card h3,
+body.dark-mode .country-card p {
+  color: #ffffff;
+}
+
+body.dark-mode .country-info {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+
+/* ================================
+   COUNTRY SEARCH
+================================ */
+
+body.dark-mode .country-search-section {
+  background: #111827;
+  color: #ffffff;
+}
+
+body.dark-mode .country-search-section h2,
+body.dark-mode .country-search-section p {
+  color: #ffffff;
+}
+
+body.dark-mode input {
+  background: #1f2937;
+  color: #ffffff;
+  border-color: #4b5563;
+}
+
+body.dark-mode input::placeholder {
+  color: #9ca3af;
+}
+
+
+/* ================================
+   RECENT SEARCHES
+================================ */
+
+body.dark-mode .recent-searches {
+  color: #ffffff;
+}
+
+body.dark-mode .recent-searches button {
+  background: #374151;
+  color: #ffffff;
+  border-color: #4b5563;
+}
+
+
+/* ================================
+   COUNTRY TABLE
+================================ */
+
+body.dark-mode .countries-table {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+body.dark-mode .table-header {
+  background: #374151;
+  color: #ffffff;
+}
+
+body.dark-mode .country-row {
+  background: #1f2937;
+  color: #ffffff;
+  border-color: #374151;
+}
+
+body.dark-mode .country-row:hover {
+  background: #374151;
+}
+
+body.dark-mode .country-name {
+  color: #ffffff;
+}
+
+
+/* ================================
+   ABOUT PAGE
+================================ */
+
+body.dark-mode .about-page {
+  background: #111827;
+  color: #ffffff;
+}
+
+body.dark-mode .about-page h1,
+body.dark-mode .about-page h2,
+body.dark-mode .about-page h3,
+body.dark-mode .about-page p {
+  color: #ffffff;
+}
+
+body.dark-mode .about-card {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+
+/* ================================
+   ERROR
+================================ */
+
+body.dark-mode .dashboard-error,
+body.dark-mode .country-error {
+  background: #451a1a;
+  color: #fecaca;
+  border-color: #7f1d1d;
+}
+
+
+/* ================================
+   SMOOTH TRANSITION
+================================ */
+
+body,
+.dashboard,
+.country-page,
+.about-page,
+.global-statistics,
+.global-chart-section,
+.top-countries,
+.stat-card,
+.country-card,
+.chart-card,
+.country-info,
+.about-card,
+.countries-table,
+.country-row,
+input {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 600px) {
+  body {
+    overflow-x: hidden;
+  }
+}

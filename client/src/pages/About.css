@@ -1,0 +1,546 @@
+/* =========================================
+   ABOUT PAGE
+========================================= */
+
+.about-page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #172033;
+}
+
+.about-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 30px;
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   HERO
+========================================= */
+
+.about-hero {
+  width: 100%;
+  padding: 80px 0;
+  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.about-hero-content {
+  max-width: 850px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.about-icon {
+  width: 75px;
+  height: 75px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 50%;
+  font-size: 38px;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.08);
+}
+
+.about-hero h1 {
+  margin: 0 0 18px;
+  font-size: 42px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #172033;
+}
+
+.about-hero p {
+  max-width: 750px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #667085;
+}
+
+
+/* =========================================
+   COMMON SECTIONS
+========================================= */
+
+.about-section {
+  width: 100%;
+  padding: 70px 0;
+  background: #ffffff;
+}
+
+.about-section-alt {
+  background: #f8fafc;
+}
+
+
+/* =========================================
+   ABOUT PROJECT CARD
+========================================= */
+
+.about-card {
+  display: flex;
+  gap: 25px;
+  padding: 35px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+}
+
+.section-icon {
+  min-width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  border-radius: 15px;
+  font-size: 30px;
+}
+
+.about-card h2 {
+  margin: 0 0 15px;
+  font-size: 28px;
+  color: #172033;
+}
+
+.about-card p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #667085;
+}
+
+.about-card p:last-child {
+  margin-bottom: 0;
+}
+
+
+/* =========================================
+   SECTION HEADING
+========================================= */
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 35px;
+}
+
+.section-heading > span {
+  font-size: 30px;
+}
+
+.section-heading h2 {
+  margin: 0 0 5px;
+  font-size: 28px;
+  color: #172033;
+}
+
+.section-heading p {
+  margin: 0;
+  font-size: 14px;
+  color: #667085;
+}
+
+
+/* =========================================
+   OBJECTIVES
+========================================= */
+
+.objective-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.objective-card {
+  padding: 28px 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.objective-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.objective-icon {
+  font-size: 35px;
+  margin-bottom: 15px;
+}
+
+.objective-card h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #172033;
+}
+
+.objective-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #667085;
+}
+
+
+/* =========================================
+   FEATURES
+========================================= */
+
+.features-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 15px;
+}
+
+.feature-item > span {
+  min-width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.feature-item h3 {
+  margin: 2px 0 5px;
+  font-size: 16px;
+  color: #172033;
+}
+
+.feature-item p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #667085;
+}
+
+
+/* =========================================
+   TECHNOLOGIES
+========================================= */
+
+.technology-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.technology-card {
+  padding: 30px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.technology-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.technology-icon {
+  margin-bottom: 12px;
+  font-size: 36px;
+}
+
+.technology-card h3 {
+  margin: 0 0 7px;
+  font-size: 17px;
+  color: #172033;
+}
+
+.technology-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #667085;
+}
+
+
+/* =========================================
+   HOW IT WORKS
+========================================= */
+
+.working-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+
+.working-card {
+  position: relative;
+  padding: 30px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+}
+
+.working-number {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.working-card h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  color: #172033;
+}
+
+.working-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #667085;
+}
+
+
+/* =========================================
+   PROJECT INFORMATION
+========================================= */
+
+.project-info-card {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 45px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.05);
+}
+
+.project-info-icon {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.project-info-card h2 {
+  margin: 0 0 15px;
+  font-size: 28px;
+  color: #172033;
+}
+
+.project-info-card p {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #667085;
+}
+
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.project-tags span {
+  padding: 8px 14px;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.about-footer {
+  padding: 30px 0;
+  background: #172033;
+  color: #ffffff;
+  text-align: center;
+}
+
+.about-footer p {
+  margin: 0 0 7px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.about-footer span {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+
+/* =========================================
+   DARK MODE
+========================================= */
+
+body.dark-mode .about-page {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+body.dark-mode .about-hero {
+  background: linear-gradient(135deg, #111c32, #0f172a);
+  border-color: #263449;
+}
+
+body.dark-mode .about-hero h1,
+body.dark-mode .about-card h2,
+body.dark-mode .section-heading h2,
+body.dark-mode .objective-card h3,
+body.dark-mode .feature-item h3,
+body.dark-mode .technology-card h3,
+body.dark-mode .working-card h3,
+body.dark-mode .project-info-card h2 {
+  color: #f8fafc;
+}
+
+body.dark-mode .about-hero p,
+body.dark-mode .about-card p,
+body.dark-mode .section-heading p,
+body.dark-mode .objective-card p,
+body.dark-mode .feature-item p,
+body.dark-mode .technology-card p,
+body.dark-mode .working-card p,
+body.dark-mode .project-info-card p {
+  color: #94a3b8;
+}
+
+body.dark-mode .about-section {
+  background: #0f172a;
+}
+
+body.dark-mode .about-section-alt {
+  background: #111827;
+}
+
+body.dark-mode .about-card,
+body.dark-mode .objective-card,
+body.dark-mode .feature-item,
+body.dark-mode .technology-card,
+body.dark-mode .working-card,
+body.dark-mode .project-info-card {
+  background: #172033;
+  border-color: #263449;
+}
+
+body.dark-mode .about-icon {
+  background: #172033;
+}
+
+body.dark-mode .section-icon {
+  background: #1e3a5f;
+}
+
+body.dark-mode .project-tags span {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+  .objective-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .technology-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .working-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .about-container {
+    padding: 0 18px;
+  }
+
+  .about-hero {
+    padding: 55px 0;
+  }
+
+  .about-hero h1 {
+    font-size: 32px;
+  }
+
+  .about-hero p {
+    font-size: 15px;
+  }
+
+  .about-section {
+    padding: 50px 0;
+  }
+
+  .about-card {
+    flex-direction: column;
+    padding: 25px;
+  }
+
+  .section-icon {
+    width: 55px;
+    min-width: 55px;
+    height: 55px;
+  }
+
+  .section-heading h2 {
+    font-size: 24px;
+  }
+
+  .objective-grid,
+  .features-list,
+  .technology-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-info-card {
+    padding: 30px 20px;
+  }
+
+}

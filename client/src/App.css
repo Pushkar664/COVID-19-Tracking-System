@@ -1,0 +1,485 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fb;
+    color: #172033;
+}
+
+
+/* Navbar */
+
+.navbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 18px 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    color: #172033;
+    font-size: 21px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    gap: 28px;
+}
+
+.nav-links a {
+    color: #4b5563;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    color: #2563eb;
+}
+
+
+/* Main */
+
+.dashboard,
+.country-page,
+.about-page {
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 24px;
+}
+
+
+/* Hero */
+
+.hero {
+    background: #1d4ed8;
+    border-radius: 24px;
+    padding: 45px;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 40px;
+}
+
+.hero-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+
+.hero h1 {
+    font-size: 42px;
+    margin: 0 0 12px;
+}
+
+.hero p {
+    font-size: 17px;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.hero-virus {
+    font-size: 100px;
+}
+
+
+/* Section heading */
+
+.section-heading {
+    margin-bottom: 20px;
+}
+
+.section-heading h2 {
+    margin-bottom: 5px;
+}
+
+.section-heading p {
+    color: #6b7280;
+}
+
+
+/* Statistics */
+
+.stats-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 20px;
+}
+
+
+.stat-card {
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    padding: 25px;
+
+    box-shadow:
+        0 5px 20px
+        rgba(0, 0, 0, 0.04);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.08);
+}
+
+.stat-card-top {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+.stat-title {
+    color: #6b7280;
+
+    font-size: 14px;
+
+    margin: 0 0 8px;
+}
+
+.stat-card h2 {
+    margin: 0;
+
+    font-size: 30px;
+}
+
+.stat-icon {
+    width: 55px;
+    height: 55px;
+
+    border-radius: 14px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #eff6ff;
+
+    font-size: 27px;
+}
+
+.stat-description {
+    color: #9ca3af;
+
+    font-size: 13px;
+
+    margin-top: 18px;
+}
+
+
+/* Information */
+
+.info-section {
+    margin-top: 30px;
+}
+
+.info-card {
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    padding: 25px;
+
+    display: flex;
+
+    gap: 20px;
+}
+
+.info-icon {
+    font-size: 35px;
+}
+
+.info-card h3 {
+    margin-top: 0;
+}
+
+.info-card p {
+    color: #6b7280;
+    line-height: 1.7;
+}
+
+
+/* Page header */
+
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 38px;
+
+    margin: 5px 0 10px;
+}
+
+.page-header p {
+    color: #6b7280;
+}
+
+
+/* Country search */
+
+.country-search {
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 18px;
+
+    padding: 20px;
+
+    display: flex;
+
+    gap: 12px;
+
+    margin-bottom: 30px;
+}
+
+.country-search input {
+    flex: 1;
+
+    padding: 14px 16px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 10px;
+
+    font-size: 16px;
+
+    outline: none;
+}
+
+.country-search input:focus {
+    border-color: #2563eb;
+}
+
+.country-search button {
+    border: none;
+
+    background: #2563eb;
+
+    color: white;
+
+    padding: 0 28px;
+
+    border-radius: 10px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.country-search button:hover {
+    background: #1d4ed8;
+}
+
+.country-search button:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
+
+
+/* Country title */
+
+.country-title {
+    margin-bottom: 25px;
+}
+
+.country-title h2 {
+    font-size: 30px;
+
+    margin-bottom: 5px;
+}
+
+.country-title p {
+    color: #6b7280;
+}
+
+
+/* Error */
+
+.error-container,
+.error-box {
+    background: #fef2f2;
+
+    border: 1px solid #fecaca;
+
+    color: #991b1b;
+
+    padding: 20px;
+
+    border-radius: 14px;
+
+    margin: 30px auto;
+
+    max-width: 700px;
+}
+
+.error-container {
+    text-align: center;
+}
+
+
+/* Loading */
+
+.loading-container {
+    min-height: 60vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.loader {
+    width: 45px;
+    height: 45px;
+
+    border: 4px solid #dbeafe;
+
+    border-top-color: #2563eb;
+
+    border-radius: 50%;
+
+    animation:
+        spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* About */
+
+.about-card {
+    background: white;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 20px;
+
+    padding: 35px;
+
+    line-height: 1.8;
+}
+
+.about-card p {
+    color: #4b5563;
+}
+
+.about-card li {
+    margin-bottom: 8px;
+}
+
+
+/* Responsive */
+
+@media (max-width: 800px) {
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .hero {
+        padding: 30px;
+    }
+
+    .hero h1 {
+        font-size: 32px;
+    }
+
+    .hero-virus {
+        font-size: 65px;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .navbar-container {
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+    .nav-links {
+        gap: 15px;
+    }
+
+    .dashboard,
+    .country-page,
+    .about-page {
+        padding: 25px 15px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 20px;
+    }
+
+    .hero h1 {
+        font-size: 30px;
+    }
+
+    .country-search {
+        flex-direction: column;
+    }
+
+    .country-search button {
+        padding: 14px;
+    }
+
+}
