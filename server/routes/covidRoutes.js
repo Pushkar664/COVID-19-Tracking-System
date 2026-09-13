@@ -4,6 +4,7 @@ const {
     globalStats,
     countryStats,
     historicalStats,
+    globalHistoricalStats,
     listCountries,
     topCountries
 } = require("../controllers/covidController");
@@ -19,6 +20,8 @@ router.get("/countries", listCountries);
 
 // Top affected countries
 router.get("/top-countries", topCountries);
+
+router.get("/historical-global", globalHistoricalStats);
 
 // Country
 router.get(

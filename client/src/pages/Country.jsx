@@ -1,4 +1,4 @@
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import "./Country.css";
 
 import {
@@ -21,60 +21,110 @@ function Country() {
 
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
-      return (
-        JSON.parse(
-          localStorage.getItem("recentCountries")
-        ) || []
-      );
+      return JSON.parse(localStorage.getItem("recentCountries")) || [];
     } catch {
       return [];
     }
   });
 
+  // =========================================
+  // STATES
+  // =========================================
+
   const [country, setCountry] = useState("");
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
+
   const [data, setData] = useState(null);
   const [historicalData, setHistoricalData] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // =========================================
-// FETCH COUNTRIES LIST
-// =========================================
+  // FETCH COUNTRY LIST
+  // =========================================
 
-useEffect(() => {
-  const fetchCountries = async () => {
-    try {
-      setCountriesLoading(true);
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        setCountriesLoading(true);
 
-      const response = await fetch(
-        `${API_URL}/countries`
-      );
+        const response = await fetch(`${API_URL}/countries`);
 
-      if (!response.ok) {
-        throw new Error("Unable to fetch countries");
+        if (!response.ok) {
+          throw new Error("Unable to fetch countries");
+        }
+
+        const result = await response.json();
+
+        const countryList = Array.isArray(result)
+          ? result
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+
+        setCountries(countryList);
+      } catch (err) {
+        console.error("Countries list error:", err);
+        setError("Unable to load country list.");
+      } finally {
+        setCountriesLoading(false);
       }
+    };
 
-      const result = await response.json();
+    fetchCountries();
+  }, []);
 
-      const countryList = Array.isArray(result)
-        ? result
-        : result.data || [];
+  // =========================================
+  // GET VALUE FROM OBJECT
+  // =========================================
 
-      setCountries(countryList);
-    } catch (err) {
-      console.error(
-        "Countries list error:",
-        err
-      );
-    } finally {
-      setCountriesLoading(false);
+  const getObjectValue = (object, keys) => {
+    if (!object || typeof object !== "object") {
+      return null;
     }
+
+    for (const key of keys) {
+      if (
+        object[key] !== undefined &&
+        object[key] !== null &&
+        object[key] !== ""
+      ) {
+        const value = Number(object[key]);
+
+        if (!Number.isNaN(value)) {
+          return value;
+        }
+      }
+    }
+
+    return null;
   };
 
-  fetchCountries();
-}, []);
+  // =========================================
+  // GET VALUE FROM API RESPONSE
+  // =========================================
+
+  const getValue = (keys) => {
+    if (!data) {
+      return null;
+    }
+
+    // Direct response
+    const directValue = getObjectValue(data, keys);
+
+    if (directValue !== null) {
+      return directValue;
+    }
+
+    // Nested response
+    if (data.data && typeof data.data === "object") {
+      return getObjectValue(data.data, keys);
+    }
+
+    return null;
+  };
 
   // =========================================
   // FETCH COUNTRY DATA
@@ -83,9 +133,8 @@ useEffect(() => {
   const fetchCountryData = async (searchedCountry) => {
     const trimmedCountry = searchedCountry.trim();
 
-    // Check empty input
     if (!trimmedCountry) {
-      setError("Please enter a country name.");
+      setError("Please select a country.");
       return;
     }
 
@@ -96,13 +145,11 @@ useEffect(() => {
       setHistoricalData([]);
 
       // =====================================
-      // CURRENT COUNTRY DATA
+      // CURRENT DATA
       // =====================================
 
       const response = await fetch(
-        `${API_URL}/country/${encodeURIComponent(
-          trimmedCountry
-        )}`
+        `${API_URL}/country/${encodeURIComponent(trimmedCountry)}`
       );
 
       if (!response.ok) {
@@ -111,97 +158,135 @@ useEffect(() => {
 
       const result = await response.json();
 
-      // Keep loading animation visible
-      await new Promise((resolve) =>
-        setTimeout(resolve, 700)
-      );
+      console.log("Country COVID Data:", result);
 
-      if (!result.success && !result.data) {
+      if (!result) {
         throw new Error("Invalid country data");
       }
 
-      // Display country data
       setData(result);
 
       // =====================================
       // SAVE RECENT SEARCH
       // =====================================
 
-      const updatedSearches = [
-        trimmedCountry,
+      setRecentSearches((previousSearches) => {
+        const updatedSearches = [
+          trimmedCountry,
+          ...previousSearches.filter(
+            (item) =>
+              item.toLowerCase() !== trimmedCountry.toLowerCase()
+          ),
+        ].slice(0, 5);
 
-        ...recentSearches.filter(
-          (item) =>
-            item.toLowerCase() !==
-            trimmedCountry.toLowerCase()
-        ),
-      ].slice(0, 5);
+        localStorage.setItem(
+          "recentCountries",
+          JSON.stringify(updatedSearches)
+        );
 
-      setRecentSearches(updatedSearches);
-
-      localStorage.setItem(
-        "recentCountries",
-        JSON.stringify(updatedSearches)
-      );
+        return updatedSearches;
+      });
 
       // =====================================
       // HISTORICAL DATA
       // =====================================
 
-      const historicalResponse = await fetch(
-        `${API_URL}/historical/${encodeURIComponent(
-          trimmedCountry
-        )}`
-      );
-
-      if (historicalResponse.ok) {
-        const historicalResult =
-          await historicalResponse.json();
-
-        const history = Array.isArray(
-          historicalResult
-        )
-          ? historicalResult
-          : historicalResult.data || [];
-
-        setHistoricalData(
-          history.map((item) => ({
-            date: item.date,
-
-            cases: Number(
-              item.cases ||
-                item.totalCases ||
-                item.TotalCases ||
-                0
-            ),
-
-            deaths: Number(
-              item.deaths ||
-                item.totalDeaths ||
-                item.TotalDeaths ||
-                0
-            ),
-
-            recovered: Number(
-              item.recovered ||
-                item.totalRecovered ||
-                item.TotalRecovered ||
-                0
-            ),
-          }))
+      try {
+        const historicalResponse = await fetch(
+          `${API_URL}/historical/${encodeURIComponent(trimmedCountry)}`
         );
+
+        if (!historicalResponse.ok) {
+          return;
+        }
+
+        const historicalResult = await historicalResponse.json();
+
+        console.log("Historical Data:", historicalResult);
+
+        const history = Array.isArray(historicalResult)
+          ? historicalResult
+          : Array.isArray(historicalResult?.data)
+          ? historicalResult.data
+          : [];
+
+        const formattedHistory = history
+          .map((item) => {
+            const cases = getObjectValue(item, [
+              "cases",
+              "totalCases",
+              "TotalCases",
+              "confirmed",
+              "Confirmed",
+            ]);
+
+            const deaths = getObjectValue(item, [
+              "deaths",
+              "totalDeaths",
+              "TotalDeaths",
+              "Deaths",
+            ]);
+
+            const recoveredFromAPI = getObjectValue(item, [
+              "recovered",
+              "totalRecovered",
+              "TotalRecovered",
+              "Recovered",
+            ]);
+
+            const active = getObjectValue(item, [
+              "active",
+              "activeCases",
+              "ActiveCases",
+              "Active",
+            ]);
+
+            let recovered = recoveredFromAPI;
+
+            // Calculate recovered if API doesn't provide it
+            if (
+              (recovered === null || recovered <= 0) &&
+              cases !== null &&
+              deaths !== null &&
+              active !== null
+            ) {
+              recovered = Math.max(
+                cases - deaths - active,
+                0
+              );
+            }
+
+            return {
+              date:
+                item.date ||
+                item.Date ||
+                item.timestamp ||
+                "",
+
+              cases: cases ?? 0,
+              deaths: deaths ?? 0,
+              recovered: recovered ?? 0,
+            };
+          })
+          .filter((item) => item.date !== "");
+
+        setHistoricalData(formattedHistory);
+      } catch (historicalError) {
+        console.error(
+          "Historical data error:",
+          historicalError
+        );
+
+        setHistoricalData([]);
       }
     } catch (err) {
-      console.error(
-        "Country search error:",
-        err
-      );
+      console.error("Country search error:", err);
 
       setData(null);
       setHistoricalData([]);
 
       setError(
-        "Country data not found. Please check the country name."
+        "Country data not found. Please select another country."
       );
     } finally {
       setLoading(false);
@@ -209,7 +294,7 @@ useEffect(() => {
   };
 
   // =========================================
-  // FORM SEARCH
+  // SEARCH
   // =========================================
 
   const searchCountry = async (e) => {
@@ -219,45 +304,12 @@ useEffect(() => {
   };
 
   // =========================================
-  // RECENT SEARCH
+  // RECENT COUNTRY
   // =========================================
 
   const searchRecentCountry = async (countryName) => {
     setCountry(countryName);
-
     await fetchCountryData(countryName);
-  };
-
-  // =========================================
-  // GET VALUE FROM API
-  // =========================================
-
-  const getValue = (keys) => {
-    if (!data) return 0;
-
-    // Check direct response
-    for (const key of keys) {
-      if (
-        data[key] !== undefined &&
-        data[key] !== null
-      ) {
-        return data[key];
-      }
-    }
-
-    // Check nested data object
-    if (data.data) {
-      for (const key of keys) {
-        if (
-          data.data[key] !== undefined &&
-          data.data[key] !== null
-        ) {
-          return data.data[key];
-        }
-      }
-    }
-
-    return 0;
   };
 
   // =========================================
@@ -265,9 +317,21 @@ useEffect(() => {
   // =========================================
 
   const formatNumber = (number) => {
-    return Number(number || 0).toLocaleString(
-      "en-IN"
-    );
+    if (
+      number === undefined ||
+      number === null ||
+      number === ""
+    ) {
+      return "Unavailable";
+    }
+
+    const numericValue = Number(number);
+
+    if (Number.isNaN(numericValue)) {
+      return "Unavailable";
+    }
+
+    return numericValue.toLocaleString("en-IN");
   };
 
   // =========================================
@@ -278,34 +342,62 @@ useEffect(() => {
     "totalCases",
     "cases",
     "TotalCases",
+    "confirmed",
+    "Confirmed",
   ]);
 
   const deaths = getValue([
     "totalDeaths",
     "deaths",
     "TotalDeaths",
+    "Deaths",
   ]);
 
-  const recovered = getValue([
+  const recoveredFromAPI = getValue([
     "totalRecovered",
     "recovered",
     "TotalRecovered",
+    "Recovered",
   ]);
 
+  const activeFromAPI = getValue([
+    "activeCases",
+    "active",
+    "ActiveCases",
+    "Active",
+  ]);
+
+  // =========================================
+  // RECOVERED CALCULATION
+  // =========================================
+
+  const recovered =
+    recoveredFromAPI !== null && recoveredFromAPI > 0
+      ? recoveredFromAPI
+      : cases !== null &&
+        deaths !== null &&
+        activeFromAPI !== null
+      ? Math.max(
+          cases - deaths - activeFromAPI,
+          0
+        )
+      : recoveredFromAPI;
+
+  // =========================================
+  // ACTIVE CALCULATION
+  // =========================================
+
   const active =
-    Number(
-      getValue([
-        "activeCases",
-        "active",
-        "ActiveCases",
-      ])
-    ) ||
-    Math.max(
-      Number(cases) -
-        Number(deaths) -
-        Number(recovered),
-      0
-    );
+    activeFromAPI !== null && activeFromAPI >= 0
+      ? activeFromAPI
+      : cases !== null &&
+        deaths !== null &&
+        recovered !== null
+      ? Math.max(
+          cases - deaths - recovered,
+          0
+        )
+      : null;
 
   // =========================================
   // COUNTRY NAME
@@ -313,7 +405,9 @@ useEffect(() => {
 
   const displayCountry =
     data?.data?.country ||
+    data?.data?.name ||
     data?.country ||
+    data?.name ||
     country;
 
   // =========================================
@@ -324,13 +418,11 @@ useEffect(() => {
     <div className="country-page">
 
       {/* =====================================
-          HERO SECTION
+          HERO
       ====================================== */}
 
       <section className="country-hero">
-
         <div>
-
           <span className="country-badge">
             COUNTRY STATISTICS
           </span>
@@ -343,18 +435,15 @@ useEffect(() => {
             Search for a country to view its
             latest COVID-19 statistics.
           </p>
-
         </div>
 
         <div className="country-hero-icon">
           🌍
         </div>
-
       </section>
 
-
       {/* =====================================
-          SEARCH SECTION
+          SEARCH
       ====================================== */}
 
       <section className="country-search-section">
@@ -364,8 +453,7 @@ useEffect(() => {
         </h2>
 
         <p>
-          Enter a country name to view
-          COVID-19 statistics.
+          Select a country to view COVID-19 statistics.
         </p>
 
         <form
@@ -373,42 +461,41 @@ useEffect(() => {
           onSubmit={searchCountry}
         >
 
-          <input
-            type="text"
-            placeholder="Enter country name, e.g. India"
+          <select
+            className="country-dropdown"
             value={country}
             onChange={(e) =>
               setCountry(e.target.value)
             }
-          />
+            disabled={
+              countriesLoading || loading
+            }
+          >
 
-          <select
-  value={country}
-  onChange={(e) =>
-    setCountry(e.target.value)
-  }
-  disabled={countriesLoading || loading}
-  className="country-dropdown"
->
-  <option value="">
-    {countriesLoading
-      ? "Loading countries..."
-      : "Select a country"}
-  </option>
+            <option value="">
+              {countriesLoading
+                ? "Loading countries..."
+                : "Select a country"}
+            </option>
 
-  {countries.map((countryName) => (
-    <option
-      key={countryName}
-      value={countryName}
-    >
-      {countryName}
-    </option>
-  ))}
-</select>
+            {countries.map(
+              (countryName, index) => (
+                <option
+                  key={`${countryName}-${index}`}
+                  value={countryName}
+                >
+                  {countryName}
+                </option>
+              )
+            )}
+
+          </select>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={
+              loading || !country
+            }
           >
             {loading
               ? "Searching..."
@@ -417,10 +504,7 @@ useEffect(() => {
 
         </form>
 
-
-        {/* =================================
-            ERROR
-        ================================== */}
+        {/* ERROR */}
 
         {error && (
           <div className="country-error">
@@ -428,28 +512,18 @@ useEffect(() => {
           </div>
         )}
 
-
-        {/* =================================
-            LOADING
-        ================================== */}
+        {/* LOADING */}
 
         {loading && (
           <div className="country-loading">
-
             <div className="loading-spinner"></div>
-
             Loading COVID-19 data...
-
           </div>
         )}
 
-
-        {/* =================================
-            RECENT SEARCHES
-        ================================== */}
+        {/* RECENT SEARCHES */}
 
         {recentSearches.length > 0 && (
-
           <div className="recent-searches">
 
             <h3>
@@ -460,46 +534,38 @@ useEffect(() => {
 
               {recentSearches.map(
                 (item, index) => (
-
                   <button
-                    key={index}
+                    key={`${item}-${index}`}
                     type="button"
                     disabled={loading}
-                    onClick={() => {
-                      searchRecentCountry(item);
-                    }}
+                    onClick={() =>
+                      searchRecentCountry(item)
+                    }
                   >
                     🌍 {item}
                   </button>
-
                 )
               )}
 
             </div>
 
           </div>
-
         )}
 
       </section>
-
 
       {/* =====================================
           RESULTS
       ====================================== */}
 
       {data && (
-
         <section className="country-results-page">
 
-          {/* =================================
-              RESULT HEADER
-          ================================== */}
+          {/* RESULT HEADER */}
 
           <div className="country-result-header">
 
             <div>
-
               <span>
                 RESULT
               </span>
@@ -507,7 +573,6 @@ useEffect(() => {
               <h2>
                 {displayCountry}
               </h2>
-
             </div>
 
             <div className="result-globe">
@@ -516,17 +581,11 @@ useEffect(() => {
 
           </div>
 
-
-          {/* =================================
-              STATISTICS CARDS
-          ================================== */}
+          {/* STATISTICS */}
 
           <div className="country-stats-grid">
 
-            {/* TOTAL CASES */}
-
             <div className="country-card cases">
-
               <div className="country-card-icon">
                 🧪
               </div>
@@ -538,14 +597,9 @@ useEffect(() => {
               <h3>
                 {formatNumber(cases)}
               </h3>
-
             </div>
 
-
-            {/* TOTAL DEATHS */}
-
             <div className="country-card deaths">
-
               <div className="country-card-icon">
                 ⚠️
               </div>
@@ -557,14 +611,9 @@ useEffect(() => {
               <h3>
                 {formatNumber(deaths)}
               </h3>
-
             </div>
 
-
-            {/* RECOVERED */}
-
             <div className="country-card recovered">
-
               <div className="country-card-icon">
                 ✓
               </div>
@@ -574,18 +623,11 @@ useEffect(() => {
               </p>
 
               <h3>
-                {Number(recovered) > 0
-                  ? formatNumber(recovered)
-                  : "Data unavailable"}
+                {formatNumber(recovered)}
               </h3>
-
             </div>
 
-
-            {/* ACTIVE CASES */}
-
             <div className="country-card active">
-
               <div className="country-card-icon">
                 📊
               </div>
@@ -597,19 +639,15 @@ useEffect(() => {
               <h3>
                 {formatNumber(active)}
               </h3>
-
             </div>
 
           </div>
 
-
-          {/* =========================================
-              HISTORICAL COVID-19 CHART
-          ========================================= */}
+          {/* =====================================
+              HISTORICAL CHART
+          ====================================== */}
 
           <div className="historical-chart">
-
-            {/* CHART HEADER */}
 
             <div className="chart-header">
 
@@ -618,7 +656,6 @@ useEffect(() => {
               </span>
 
               <div>
-
                 <h2>
                   Historical COVID-19 Data
                 </h2>
@@ -626,16 +663,11 @@ useEffect(() => {
                 <p>
                   COVID-19 statistics over time
                 </p>
-
               </div>
 
             </div>
 
-
-            {/* CHART */}
-
             {historicalData.length > 0 ? (
-
               <div className="chart-container">
 
                 <ResponsiveContainer
@@ -646,10 +678,10 @@ useEffect(() => {
                   <LineChart
                     data={historicalData}
                     margin={{
-                      top: 15,
-                      right: 25,
-                      left: 10,
-                      bottom: 70,
+                      top: 10,
+                      right: 20,
+                      left: 0,
+                      bottom: 65,
                     }}
                   >
 
@@ -661,7 +693,7 @@ useEffect(() => {
                       dataKey="date"
                       angle={-30}
                       textAnchor="end"
-                      height={70}
+                      height={65}
                       interval="preserveStartEnd"
                       tick={{
                         fontSize: 11,
@@ -681,9 +713,6 @@ useEffect(() => {
                       height={35}
                     />
 
-
-                    {/* CASES */}
-
                     <Line
                       type="monotone"
                       dataKey="cases"
@@ -691,13 +720,7 @@ useEffect(() => {
                       stroke="#2563eb"
                       strokeWidth={3}
                       dot={false}
-                      activeDot={{
-                        r: 5,
-                      }}
                     />
-
-
-                    {/* DEATHS */}
 
                     <Line
                       type="monotone"
@@ -706,13 +729,7 @@ useEffect(() => {
                       stroke="#dc2626"
                       strokeWidth={3}
                       dot={false}
-                      activeDot={{
-                        r: 5,
-                      }}
                     />
-
-
-                    {/* RECOVERED */}
 
                     <Line
                       type="monotone"
@@ -721,9 +738,6 @@ useEffect(() => {
                       stroke="#16a34a"
                       strokeWidth={3}
                       dot={false}
-                      activeDot={{
-                        r: 5,
-                      }}
                     />
 
                   </LineChart>
@@ -731,65 +745,44 @@ useEffect(() => {
                 </ResponsiveContainer>
 
               </div>
-
             ) : (
-
               <p className="no-history">
                 Historical data is not available
                 for this country.
               </p>
-
             )}
 
           </div>
 
         </section>
-
       )}
 
-
       {/* =====================================
-          INFORMATION SECTION
+          INFORMATION
       ====================================== */}
 
       <section className="country-info">
 
-        {/* HOW TO USE */}
-
         <div>
-
-          <span>
-            📌
-          </span>
+          <span>📌</span>
 
           <div>
-
             <h3>
               How to use
             </h3>
 
             <p>
-              Enter the name of any supported
-              country in the search box and click
-              Search to view its COVID-19
-              statistics.
+              Select a country from the dropdown
+              and click Search to view its
+              COVID-19 statistics.
             </p>
-
           </div>
-
         </div>
 
-
-        {/* AVAILABLE STATISTICS */}
-
         <div>
-
-          <span>
-            📊
-          </span>
+          <span>📊</span>
 
           <div>
-
             <h3>
               Available Statistics
             </h3>
@@ -799,9 +792,23 @@ useEffect(() => {
               deaths, recovered patients and
               active cases.
             </p>
-
           </div>
+        </div>
 
+        <div>
+          <span>🧮</span>
+
+          <div>
+            <h3>
+              Recovered Data
+            </h3>
+
+            <p>
+              If recovered data is unavailable,
+              it may be calculated using total
+              cases, deaths and active cases.
+            </p>
+          </div>
         </div>
 
       </section>

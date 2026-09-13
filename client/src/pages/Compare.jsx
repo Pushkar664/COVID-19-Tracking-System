@@ -1,5 +1,4 @@
-import { useState } from "react";
-import "./Compare.css";
+import { useEffect, useState } from "react";
 
 import {
   BarChart,
@@ -12,11 +11,20 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import "./Compare.css";
+
 const API_URL = "http://192.168.1.11:5000/api/covid";
 
 function Compare() {
+  // =========================================
+  // STATES
+  // =========================================
+
   const [countryA, setCountryA] = useState("");
   const [countryB, setCountryB] = useState("");
+
+  const [countries, setCountries] = useState([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
 
   const [dataA, setDataA] = useState(null);
   const [dataB, setDataB] = useState(null);
@@ -25,160 +33,386 @@ function Compare() {
   const [error, setError] = useState("");
 
   // =========================================
-  // FETCH COUNTRY
+  // FETCH COUNTRY LIST
+  // =========================================
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        setCountriesLoading(true);
+        setError("");
+
+        const response = await fetch(`${API_URL}/countries`);
+
+        if (!response.ok) {
+          throw new Error("Unable to fetch countries");
+        }
+
+        const result = await response.json();
+
+        // API can return:
+        // ["India", "USA", ...]
+        //
+        // OR:
+        // { success: true, data: [...] }
+
+        const countryList = Array.isArray(result)
+          ? result
+          : Array.isArray(result.data)
+          ? result.data
+          : [];
+
+        setCountries(countryList);
+      } catch (err) {
+        console.error("Countries list error:", err);
+        setError("Unable to load country list.");
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  // =========================================
+  // FETCH COUNTRY DATA
   // =========================================
 
   const fetchCountry = async (countryName) => {
     const response = await fetch(
-      `${API_URL}/country/${encodeURIComponent(
-        countryName.trim()
-      )}`
+      `${API_URL}/country/${encodeURIComponent(countryName)}`
     );
 
     if (!response.ok) {
-      throw new Error(
-        `${countryName} not found`
-      );
+      throw new Error(`Unable to fetch data for ${countryName}`);
     }
 
     const result = await response.json();
 
-    if (!result.success || !result.data) {
-      throw new Error(
-        `${countryName} data unavailable`
-      );
+    /*
+      Handle different possible API structures:
+
+      1.
+      {
+        success: true,
+        data: {
+          country: "India",
+          cases: 100,
+          deaths: 2,
+          recovered: 90,
+          active: 8
+        }
+      }
+
+      2.
+      {
+        data: {...}
+      }
+
+      3.
+      {
+        country: "India",
+        cases: 100
+      }
+    */
+
+    if (result && result.success === true && result.data) {
+      return result.data;
     }
 
-    return result.data;
+    if (result && result.data) {
+      return result.data;
+    }
+
+    if (result && result.country) {
+      return result;
+    }
+
+    return result;
+  };
+
+  // =========================================
+  // GET VALUE FROM COUNTRY DATA
+  // =========================================
+
+  const getCountryValue = (countryData, keys) => {
+    if (!countryData) {
+      return null;
+    }
+
+    // Check direct object
+    for (const key of keys) {
+      if (
+        countryData[key] !== undefined &&
+        countryData[key] !== null &&
+        countryData[key] !== ""
+      ) {
+        const value = Number(countryData[key]);
+
+        if (!Number.isNaN(value)) {
+          return value;
+        }
+      }
+    }
+
+    // Check nested data object
+    if (countryData.data && typeof countryData.data === "object") {
+      for (const key of keys) {
+        if (
+          countryData.data[key] !== undefined &&
+          countryData.data[key] !== null &&
+          countryData.data[key] !== ""
+        ) {
+          const value = Number(countryData.data[key]);
+
+          if (!Number.isNaN(value)) {
+            return value;
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // =========================================
+  // GET COUNTRY NAME
+  // =========================================
+
+  const getCountryName = (countryData, fallback) => {
+    if (!countryData) {
+      return fallback;
+    }
+
+    return (
+      countryData.country ||
+      countryData.name ||
+      countryData.Country ||
+      countryData.data?.country ||
+      countryData.data?.name ||
+      fallback
+    );
   };
 
   // =========================================
   // COMPARE COUNTRIES
   // =========================================
 
-  const compareCountries = async (e) => {
-    e.preventDefault();
+  const compareCountries = async () => {
+    setError("");
 
-    const firstCountry = countryA.trim();
-    const secondCountry = countryB.trim();
-
-    if (!firstCountry || !secondCountry) {
-      setError(
-        "Please enter both country names."
-      );
+    if (!countryA || !countryB) {
+      setError("Please select both countries.");
       return;
     }
 
-    if (
-      firstCountry.toLowerCase() ===
-      secondCountry.toLowerCase()
-    ) {
-      setError(
-        "Please select two different countries."
-      );
+    if (countryA === countryB) {
+      setError("Please select two different countries.");
       return;
     }
 
     try {
       setLoading(true);
-      setError("");
 
-      setDataA(null);
-      setDataB(null);
+      const [resultA, resultB] = await Promise.all([
+        fetchCountry(countryA),
+        fetchCountry(countryB),
+      ]);
 
-      const [firstData, secondData] =
-        await Promise.all([
-          fetchCountry(firstCountry),
-          fetchCountry(secondCountry),
-        ]);
-
-      setDataA(firstData);
-      setDataB(secondData);
+      setDataA(resultA);
+      setDataB(resultB);
     } catch (err) {
-      console.error(
-        "Country comparison error:",
-        err
-      );
-
+      console.error("Compare error:", err);
+      setError("Unable to fetch comparison data. Please try again.");
       setDataA(null);
       setDataB(null);
-
-      setError(
-        "Unable to compare countries. Please check the country names."
-      );
     } finally {
       setLoading(false);
     }
   };
 
   // =========================================
-  // FORMAT NUMBER
+  // CLEAR COMPARISON
   // =========================================
 
-  const formatNumber = (number) => {
-    return Number(number || 0).toLocaleString(
-      "en-IN"
-    );
+  const clearComparison = () => {
+    setCountryA("");
+    setCountryB("");
+    setDataA(null);
+    setDataB(null);
+    setError("");
   };
 
   // =========================================
-  // GET COUNTRY VALUE
+  // NUMBER FORMAT
   // =========================================
 
-  const getCountryValue = (
-    countryData,
-    key
-  ) => {
-    if (!countryData) return 0;
+  const formatNumber = (value) => {
+    if (
+      value === null ||
+      value === undefined ||
+      Number.isNaN(Number(value))
+    ) {
+      return "Unavailable";
+    }
 
-    return Number(
-      countryData[key] || 0
-    );
+    return Number(value).toLocaleString();
   };
 
   // =========================================
-  // COUNTRY STATISTICS
+  // COUNTRY A STATISTICS
   // =========================================
 
-  const casesA = getCountryValue(
-    dataA,
-    "cases"
-  );
+  const casesA = getCountryValue(dataA, [
+    "totalCases",
+    "cases",
+    "TotalCases",
+    "confirmed",
+    "Confirmed",
+  ]);
 
-  const deathsA = getCountryValue(
-    dataA,
-    "deaths"
-  );
+  const deathsA = getCountryValue(dataA, [
+    "totalDeaths",
+    "deaths",
+    "TotalDeaths",
+    "Deaths",
+  ]);
 
-  const recoveredA = getCountryValue(
-    dataA,
-    "recovered"
-  );
+  const recoveredAFromAPI = getCountryValue(dataA, [
+    "totalRecovered",
+    "recovered",
+    "TotalRecovered",
+    "Recovered",
+  ]);
 
-  const activeA = getCountryValue(
-    dataA,
-    "active"
-  );
+  const activeAFromAPI = getCountryValue(dataA, [
+    "activeCases",
+    "active",
+    "ActiveCases",
+    "Active",
+  ]);
 
-  const casesB = getCountryValue(
-    dataB,
-    "cases"
-  );
+  /*
+    IMPORTANT RECOVERED FIX
 
-  const deathsB = getCountryValue(
-    dataB,
-    "deaths"
-  );
+    If recovered is available from API,
+    use it.
 
-  const recoveredB = getCountryValue(
-    dataB,
-    "recovered"
-  );
+    Otherwise, if active cases are available:
 
-  const activeB = getCountryValue(
-    dataB,
-    "active"
-  );
+    Recovered =
+    Total Cases - Deaths - Active Cases
+  */
+
+  const recoveredA =
+    recoveredAFromAPI !== null && recoveredAFromAPI > 0
+      ? recoveredAFromAPI
+      : casesA !== null &&
+        deathsA !== null &&
+        activeAFromAPI !== null
+      ? Math.max(casesA - deathsA - activeAFromAPI, 0)
+      : recoveredAFromAPI;
+
+  /*
+    Active Cases
+
+    If API provides active cases, use it.
+
+    Otherwise:
+
+    Active =
+    Total Cases - Deaths - Recovered
+  */
+
+  const activeA =
+    activeAFromAPI !== null && activeAFromAPI >= 0
+      ? activeAFromAPI
+      : casesA !== null &&
+        deathsA !== null &&
+        recoveredA !== null
+      ? Math.max(casesA - deathsA - recoveredA, 0)
+      : null;
+
+  // =========================================
+  // COUNTRY B STATISTICS
+  // =========================================
+
+  const casesB = getCountryValue(dataB, [
+    "totalCases",
+    "cases",
+    "TotalCases",
+    "confirmed",
+    "Confirmed",
+  ]);
+
+  const deathsB = getCountryValue(dataB, [
+    "totalDeaths",
+    "deaths",
+    "TotalDeaths",
+    "Deaths",
+  ]);
+
+  const recoveredBFromAPI = getCountryValue(dataB, [
+    "totalRecovered",
+    "recovered",
+    "TotalRecovered",
+    "Recovered",
+  ]);
+
+  const activeBFromAPI = getCountryValue(dataB, [
+    "activeCases",
+    "active",
+    "ActiveCases",
+    "Active",
+  ]);
+
+  /*
+    IMPORTANT RECOVERED FIX
+
+    If recovered is available from API,
+    use it.
+
+    Otherwise, if active cases are available:
+
+    Recovered =
+    Total Cases - Deaths - Active Cases
+  */
+
+  const recoveredB =
+    recoveredBFromAPI !== null && recoveredBFromAPI > 0
+      ? recoveredBFromAPI
+      : casesB !== null &&
+        deathsB !== null &&
+        activeBFromAPI !== null
+      ? Math.max(casesB - deathsB - activeBFromAPI, 0)
+      : recoveredBFromAPI;
+
+  /*
+    Active Cases
+
+    If API provides active cases, use it.
+
+    Otherwise:
+
+    Active =
+    Total Cases - Deaths - Recovered
+  */
+
+  const activeB =
+    activeBFromAPI !== null && activeBFromAPI >= 0
+      ? activeBFromAPI
+      : casesB !== null &&
+        deathsB !== null &&
+        recoveredB !== null
+      ? Math.max(casesB - deathsB - recoveredB, 0)
+      : null;
+
+  // =========================================
+  // DISPLAY COUNTRY NAMES
+  // =========================================
+
+  const displayCountryA = getCountryName(dataA, countryA);
+  const displayCountryB = getCountryName(dataB, countryB);
 
   // =========================================
   // CHART DATA
@@ -188,509 +422,402 @@ function Compare() {
     dataA && dataB
       ? [
           {
-            name: "Cases",
-            [dataA.country]: casesA,
-            [dataB.country]: casesB,
+            statistic: "Total Cases",
+            [displayCountryA]: casesA ?? 0,
+            [displayCountryB]: casesB ?? 0,
           },
           {
-            name: "Deaths",
-            [dataA.country]: deathsA,
-            [dataB.country]: deathsB,
+            statistic: "Deaths",
+            [displayCountryA]: deathsA ?? 0,
+            [displayCountryB]: deathsB ?? 0,
           },
           {
-            name: "Recovered",
-            [dataA.country]: recoveredA,
-            [dataB.country]: recoveredB,
+            statistic: "Recovered",
+            [displayCountryA]: recoveredA ?? 0,
+            [displayCountryB]: recoveredB ?? 0,
           },
           {
-            name: "Active",
-            [dataA.country]: activeA,
-            [dataB.country]: activeB,
+            statistic: "Active",
+            [displayCountryA]: activeA ?? 0,
+            [displayCountryB]: activeB ?? 0,
           },
         ]
       : [];
 
   // =========================================
-  // RETURN
+  // RENDER
   // =========================================
 
   return (
     <div className="compare-page">
+      <div className="compare-container">
 
-      {/* =====================================
-          HERO
-      ====================================== */}
+        {/* =========================================
+            HEADER
+        ========================================= */}
 
-      <section className="compare-hero">
-
-        <div>
-          <span className="compare-badge">
-            COUNTRY COMPARISON
-          </span>
-
-          <h1>
-            Compare COVID-19 Statistics
-          </h1>
+        <div className="compare-header">
+          <h1>Compare Countries</h1>
 
           <p>
-            Compare COVID-19 statistics between
-            two countries.
+            Compare COVID-19 statistics between two countries.
           </p>
         </div>
 
-        <div className="compare-hero-icon">
-          🌍
-        </div>
+        {/* =========================================
+            SEARCH / SELECT SECTION
+        ========================================= */}
 
-      </section>
+        <div className="compare-search">
 
+          {/* COUNTRY A */}
 
-      {/* =====================================
-          SEARCH SECTION
-      ====================================== */}
-
-      <section className="compare-search">
-
-        <h2>
-          Select Countries
-        </h2>
-
-        <p>
-          Enter two country names to compare
-          their COVID-19 statistics.
-        </p>
-
-        <form
-          className="compare-form"
-          onSubmit={compareCountries}
-        >
-
-          <div className="compare-input-group">
-
-            <label>
+          <div className="country-select-box">
+            <label htmlFor="countryA">
               Country 1
             </label>
 
-            <input
-              type="text"
-              placeholder="e.g. India"
+            <select
+              id="countryA"
               value={countryA}
-              onChange={(e) =>
-                setCountryA(e.target.value)
-              }
-            />
+              onChange={(e) => {
+                setCountryA(e.target.value);
 
+                // Clear second country if both become same
+                if (e.target.value === countryB) {
+                  setCountryB("");
+                }
+              }}
+              disabled={countriesLoading}
+            >
+              <option value="">
+                {countriesLoading
+                  ? "Loading countries..."
+                  : "Select Country"}
+              </option>
+
+              {countries.map((country, index) => (
+                <option key={`${country}-${index}`} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
           </div>
 
+          {/* VS */}
 
           <div className="compare-vs">
             VS
           </div>
 
+          {/* COUNTRY B */}
 
-          <div className="compare-input-group">
-
-            <label>
+          <div className="country-select-box">
+            <label htmlFor="countryB">
               Country 2
             </label>
 
-            <input
-              type="text"
-              placeholder="e.g. USA"
+            <select
+              id="countryB"
               value={countryB}
-              onChange={(e) =>
-                setCountryB(e.target.value)
-              }
-            />
+              onChange={(e) => setCountryB(e.target.value)}
+              disabled={countriesLoading}
+            >
+              <option value="">
+                {countriesLoading
+                  ? "Loading countries..."
+                  : "Select Country"}
+              </option>
 
+              {countries
+                .filter((country) => country !== countryA)
+                .map((country, index) => (
+                  <option key={`${country}-${index}`} value={country}>
+                    {country}
+                  </option>
+                ))}
+            </select>
           </div>
 
+          {/* BUTTONS */}
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Comparing..."
-              : "Compare Countries"}
-          </button>
+          <div className="compare-buttons">
+            <button
+              className="compare-btn"
+              onClick={compareCountries}
+              disabled={loading || countriesLoading}
+            >
+              {loading ? "Comparing..." : "Compare"}
+            </button>
 
-        </form>
+            <button
+              className="clear-btn"
+              onClick={clearComparison}
+              disabled={loading}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
 
-
-        {/* ERROR */}
+        {/* =========================================
+            ERROR
+        ========================================= */}
 
         {error && (
           <div className="compare-error">
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
-
-        {/* LOADING */}
+        {/* =========================================
+            LOADING
+        ========================================= */}
 
         {loading && (
           <div className="compare-loading">
+            <p>Loading comparison data...</p>
+          </div>
+        )}
 
-            <div className="compare-spinner"></div>
+        {/* =========================================
+            RESULTS
+        ========================================= */}
 
-            Loading country data...
+        {!loading && dataA && dataB && (
+          <div className="comparison-results">
+
+            {/* =========================================
+                COUNTRY CARDS
+            ========================================= */}
+
+            <div className="comparison-cards">
+
+              {/* COUNTRY A CARD */}
+
+              <div className="country-card">
+                <div className="country-card-header">
+                  <h2>{displayCountryA}</h2>
+                </div>
+
+                <div className="country-statistics">
+
+                  {/* TOTAL CASES */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Total Cases
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(casesA)}
+                    </span>
+                  </div>
+
+                  {/* DEATHS */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Deaths
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(deathsA)}
+                    </span>
+                  </div>
+
+                  {/* RECOVERED */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Recovered
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(recoveredA)}
+                    </span>
+                  </div>
+
+                  {/* ACTIVE */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Active Cases
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(activeA)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* COUNTRY B CARD */}
+
+              <div className="country-card">
+                <div className="country-card-header">
+                  <h2>{displayCountryB}</h2>
+                </div>
+
+                <div className="country-statistics">
+
+                  {/* TOTAL CASES */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Total Cases
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(casesB)}
+                    </span>
+                  </div>
+
+                  {/* DEATHS */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Deaths
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(deathsB)}
+                    </span>
+                  </div>
+
+                  {/* RECOVERED */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Recovered
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(recoveredB)}
+                    </span>
+                  </div>
+
+                  {/* ACTIVE */}
+
+                  <div className="stat-item">
+                    <span className="stat-label">
+                      Active Cases
+                    </span>
+
+                    <span className="stat-value">
+                      {formatNumber(activeB)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================
+                CHART
+            ========================================= */}
+
+            <div className="comparison-chart">
+
+              <div className="chart-header">
+                <h2>COVID-19 Statistics Comparison</h2>
+              </div>
+
+              <div className="chart-container">
+
+                <ResponsiveContainer
+                  width="100%"
+                  height={450}
+                >
+                  <BarChart
+                    data={chartData}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 20,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+
+                    <XAxis
+                      dataKey="statistic"
+                    />
+
+                    <YAxis />
+
+                    <Tooltip />
+
+                    <Legend />
+
+                    <Bar
+                      dataKey={displayCountryA}
+                      name={displayCountryA}
+                      fill="#2563eb"
+                    />
+
+                    <Bar
+                      dataKey={displayCountryB}
+                      name={displayCountryB}
+                      fill="#ef4444"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+
+              </div>
+            </div>
+
+            {/* =========================================
+                INFORMATION
+            ========================================= */}
+
+            <div className="comparison-info">
+
+              <h3>
+                About the comparison
+              </h3>
+
+              <p>
+                This comparison displays total COVID-19 cases,
+                deaths, recovered patients, and active cases for
+                the selected countries.
+              </p>
+
+              <p>
+                When recovered patient data is not directly
+                available from the API, it is calculated using:
+              </p>
+
+              <div className="formula">
+                Recovered = Total Cases − Deaths − Active Cases
+              </div>
+
+              <p>
+                Therefore, the recovered value may be an estimated
+                value for countries where the original recovered
+                statistic is not available.
+              </p>
+
+            </div>
 
           </div>
         )}
 
-      </section>
-
-
-      {/* =====================================
-          RESULTS
-      ====================================== */}
-
-      {dataA && dataB && (
-
-        <section className="comparison-results">
-
-          {/* =================================
-              COUNTRY HEADERS
-          ================================== */}
-
-          <div className="country-comparison-header">
-
-            <div className="comparison-country">
-
-              <span>
-                COUNTRY 1
-              </span>
-
-              <h2>
-                {dataA.country}
-              </h2>
-
-            </div>
-
-
-            <div className="comparison-vs-large">
-              VS
-            </div>
-
-
-            <div className="comparison-country">
-
-              <span>
-                COUNTRY 2
-              </span>
-
-              <h2>
-                {dataB.country}
-              </h2>
-
-            </div>
-
-          </div>
-
-
-          {/* =================================
-              STATISTICS
-          ================================== */}
-
-          <div className="comparison-grid">
-
-            {/* CASES */}
-
-            <div className="comparison-card">
-
-              <div className="comparison-card-title">
-                🧪
-                <span>
-                  Total Cases
-                </span>
-              </div>
-
-              <div className="comparison-values">
-
-                <div>
-                  <small>
-                    {dataA.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(casesA)}
-                  </strong>
-                </div>
-
-                <div>
-                  <small>
-                    {dataB.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(casesB)}
-                  </strong>
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* DEATHS */}
-
-            <div className="comparison-card">
-
-              <div className="comparison-card-title">
-                ⚠️
-                <span>
-                  Total Deaths
-                </span>
-              </div>
-
-              <div className="comparison-values">
-
-                <div>
-                  <small>
-                    {dataA.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(deathsA)}
-                  </strong>
-                </div>
-
-                <div>
-                  <small>
-                    {dataB.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(deathsB)}
-                  </strong>
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* RECOVERED */}
-
-            <div className="comparison-card">
-
-              <div className="comparison-card-title">
-                ✓
-                <span>
-                  Recovered
-                </span>
-              </div>
-
-              <div className="comparison-values">
-
-                <div>
-                  <small>
-                    {dataA.country}
-                  </small>
-
-                  <strong>
-                    {recoveredA > 0
-                      ? formatNumber(
-                          recoveredA
-                        )
-                      : "Unavailable"}
-                  </strong>
-                </div>
-
-                <div>
-                  <small>
-                    {dataB.country}
-                  </small>
-
-                  <strong>
-                    {recoveredB > 0
-                      ? formatNumber(
-                          recoveredB
-                        )
-                      : "Unavailable"}
-                  </strong>
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* ACTIVE */}
-
-            <div className="comparison-card">
-
-              <div className="comparison-card-title">
-                📊
-                <span>
-                  Active Cases
-                </span>
-              </div>
-
-              <div className="comparison-values">
-
-                <div>
-                  <small>
-                    {dataA.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(activeA)}
-                  </strong>
-                </div>
-
-                <div>
-                  <small>
-                    {dataB.country}
-                  </small>
-
-                  <strong>
-                    {formatNumber(activeB)}
-                  </strong>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =================================
-              COMPARISON CHART
-          ================================== */}
-
-          <div className="comparison-chart">
-
-            <div className="comparison-chart-header">
-
-              <div className="comparison-chart-icon">
-                📊
-              </div>
-
-              <div>
-                <h2>
-                  Country Comparison
-                </h2>
-
-                <p>
-                  COVID-19 statistics comparison
-                </p>
-              </div>
-
-            </div>
-
-
-            <div className="comparison-chart-container">
-
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-
-                <BarChart
-                  data={chartData}
-                  margin={{
-                    top: 20,
-                    right: 25,
-                    left: 10,
-                    bottom: 20,
-                  }}
-                >
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                  />
-
-                  <XAxis
-                    dataKey="name"
-                  />
-
-                  <YAxis />
-
-                  <Tooltip />
-
-                  <Legend />
-
-                  <Bar
-                    dataKey={dataA.country}
-                    fill="#2563eb"
-                    name={dataA.country}
-                  />
-
-                  <Bar
-                    dataKey={dataB.country}
-                    fill="#dc2626"
-                    name={dataB.country}
-                  />
-
-                </BarChart>
-
-              </ResponsiveContainer>
-
-            </div>
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* =====================================
-          INFORMATION
-      ====================================== */}
-
-      <section className="compare-info">
-
-        <div>
-
-          <span>
-            📌
-          </span>
-
-          <div>
-
-            <h3>
-              How to use
-            </h3>
+        {/* =========================================
+            INITIAL MESSAGE
+        ========================================= */}
+
+        {!loading && !dataA && !dataB && !error && (
+          <div className="compare-placeholder">
+            <h2>Compare COVID-19 Data</h2>
 
             <p>
-              Enter two country names and click
-              Compare Countries to view their
-              COVID-19 statistics side-by-side.
+              Select two countries above to view their
+              COVID-19 statistics side by side.
             </p>
-
           </div>
+        )}
 
-        </div>
-
-
-        <div>
-
-          <span>
-            📊
-          </span>
-
-          <div>
-
-            <h3>
-              Comparison Statistics
-            </h3>
-
-            <p>
-              Compare total cases, deaths,
-              recovered patients and active
-              cases between countries.
-            </p>
-
-          </div>
-
-        </div>
-
-      </section>
-
+      </div>
     </div>
   );
 }

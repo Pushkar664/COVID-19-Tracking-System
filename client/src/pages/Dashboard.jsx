@@ -19,22 +19,54 @@ const API_URL = "http://192.168.1.11:5000/api/covid";
 function Dashboard() {
   const navigate = useNavigate();
 
+  // =========================================
+  // STATE
+  // =========================================
+
   const [globalData, setGlobalData] = useState(null);
   const [topCountries, setTopCountries] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [chartData, setChartData] = useState([]);
+  const [historyData, setHistoryData] = useState([]);
+
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // =========================================
   // FETCH DATA WHEN PAGE LOADS
   // =========================================
 
   useEffect(() => {
-    fetchGlobalData();
-    fetchTopCountries();
+    fetchDashboardData();
   }, []);
+
+  // =========================================
+  // FETCH ALL DASHBOARD DATA
+  // =========================================
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await Promise.all([
+        fetchGlobalData(),
+        fetchTopCountries(),
+        fetchGlobalHistory(),
+      ]);
+
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("Dashboard error:", err);
+
+      setError(
+        "Unable to load dashboard data. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // =========================================
   // FETCH GLOBAL COVID DATA
@@ -42,60 +74,102 @@ function Dashboard() {
 
   const fetchGlobalData = async () => {
     try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(`${API_URL}/global`);
+      const response = await fetch(
+        `${API_URL}/global`
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch global COVID data");
+        throw new Error(
+          "Failed to fetch global COVID data"
+        );
       }
 
       const result = await response.json();
 
-      console.log("Global COVID Data:", result);
-
-      setGlobalData(result);
-
-      // Get values from API response
-      const cases = getValue(result, [
-        "cases",
-        "totalCases",
-      ]);
-
-      const deaths = getValue(result, [
-        "deaths",
-        "totalDeaths",
-      ]);
-
-      const recovered = getValue(result, [
-        "recovered",
-        "totalRecovered",
-      ]);
-
-      const active = getValue(result, [
-        "active",
-        "activeCases",
-      ]);
-
-      // Chart data
-      setChartData([
-        {
-          name: "COVID-19",
-          Cases: Number(cases) || 0,
-          Deaths: Number(deaths) || 0,
-          Recovered: Number(recovered) || 0,
-          Active: Number(active) || 0,
-        },
-      ]);
-    } catch (err) {
-      console.error("Global data error:", err);
-
-      setError(
-        "Unable to load global COVID-19 data."
+      console.log(
+        "Global COVID Data:",
+        result
       );
-    } finally {
-      setLoading(false);
+
+      /*
+       * Supports:
+       *
+       * {
+       *   success: true,
+       *   data: {...}
+       * }
+       *
+       * and:
+       *
+       * {
+       *   cases: ...,
+       *   deaths: ...
+       * }
+       */
+
+      const data =
+        result?.data &&
+        typeof result.data === "object"
+          ? result.data
+          : result;
+
+      setGlobalData(data);
+
+    } catch (err) {
+      console.error(
+        "Global data error:",
+        err
+      );
+
+      throw err;
+    }
+  };
+
+  // =========================================
+  // FETCH GLOBAL HISTORICAL DATA
+  // =========================================
+
+  const fetchGlobalHistory = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/historical-global`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Failed to fetch global historical data"
+        );
+      }
+
+      const result = await response.json();
+
+      console.log(
+        "Global Historical Data:",
+        result
+      );
+
+      const history =
+        result?.success &&
+        Array.isArray(result.data)
+          ? result.data
+          : Array.isArray(result)
+          ? result
+          : [];
+
+      setHistoryData(history);
+
+    } catch (err) {
+      console.error(
+        "Global historical data error:",
+        err
+      );
+
+      /*
+       * Historical chart should not
+       * stop the complete dashboard.
+       */
+
+      setHistoryData([]);
     }
   };
 
@@ -117,21 +191,32 @@ function Dashboard() {
 
       const result = await response.json();
 
-      console.log("Top Countries Data:", result);
+      console.log(
+        "Top Countries Data:",
+        result
+      );
 
       if (
-        result.success &&
+        result?.success &&
         Array.isArray(result.data)
       ) {
         setTopCountries(result.data);
+      } else if (Array.isArray(result)) {
+        setTopCountries(result);
       } else {
         setTopCountries([]);
       }
+
     } catch (err) {
       console.error(
         "Top countries error:",
         err
       );
+
+      /*
+       * Do not stop the whole dashboard
+       * if only the top-country API fails.
+       */
 
       setTopCountries([]);
     }
@@ -143,31 +228,53 @@ function Dashboard() {
 
   const getValue = (obj, keys) => {
     if (!obj) {
-      return 0;
+      return null;
     }
+
+    // =====================================
+    // DIRECT OBJECT
+    // =====================================
 
     for (const key of keys) {
-      // Example:
-      // result.cases
       if (
         obj[key] !== undefined &&
-        obj[key] !== null
+        obj[key] !== null &&
+        obj[key] !== ""
       ) {
-        return obj[key];
-      }
+        const value = Number(obj[key]);
 
-      // Example:
-      // result.data.cases
-      if (
-        obj.data &&
-        obj.data[key] !== undefined &&
-        obj.data[key] !== null
-      ) {
-        return obj.data[key];
+        if (!Number.isNaN(value)) {
+          return value;
+        }
       }
     }
 
-    return 0;
+    // =====================================
+    // NESTED DATA OBJECT
+    // =====================================
+
+    if (
+      obj.data &&
+      typeof obj.data === "object"
+    ) {
+      for (const key of keys) {
+        if (
+          obj.data[key] !== undefined &&
+          obj.data[key] !== null &&
+          obj.data[key] !== ""
+        ) {
+          const value = Number(
+            obj.data[key]
+          );
+
+          if (!Number.isNaN(value)) {
+            return value;
+          }
+        }
+      }
+    }
+
+    return null;
   };
 
   // =========================================
@@ -180,16 +287,18 @@ function Dashboard() {
       number === null ||
       number === ""
     ) {
-      return "0";
+      return "Unavailable";
     }
 
     const numericValue = Number(number);
 
     if (Number.isNaN(numericValue)) {
-      return "0";
+      return "Unavailable";
     }
 
-    return numericValue.toLocaleString("en-IN");
+    return numericValue.toLocaleString(
+      "en-IN"
+    );
   };
 
   // =========================================
@@ -207,6 +316,91 @@ function Dashboard() {
       )}`
     );
   };
+
+  // =========================================
+  // GLOBAL STATISTICS
+  // =========================================
+
+  const globalCases = getValue(
+    globalData,
+    [
+      "cases",
+      "totalCases",
+      "TotalCases",
+      "confirmed",
+      "Confirmed",
+    ]
+  );
+
+  const globalDeaths = getValue(
+    globalData,
+    [
+      "deaths",
+      "totalDeaths",
+      "TotalDeaths",
+      "Deaths",
+    ]
+  );
+
+  const globalRecoveredFromAPI =
+    getValue(
+      globalData,
+      [
+        "recovered",
+        "totalRecovered",
+        "TotalRecovered",
+        "Recovered",
+      ]
+    );
+
+  const globalActiveFromAPI =
+    getValue(
+      globalData,
+      [
+        "active",
+        "activeCases",
+        "ActiveCases",
+        "Active",
+      ]
+    );
+
+  // =========================================
+  // GLOBAL RECOVERED CALCULATION
+  // =========================================
+
+  const globalRecovered =
+    globalRecoveredFromAPI !== null &&
+    globalRecoveredFromAPI > 0
+      ? globalRecoveredFromAPI
+      : globalCases !== null &&
+        globalDeaths !== null &&
+        globalActiveFromAPI !== null
+      ? Math.max(
+          globalCases -
+            globalDeaths -
+            globalActiveFromAPI,
+          0
+        )
+      : globalRecoveredFromAPI;
+
+  // =========================================
+  // GLOBAL ACTIVE CALCULATION
+  // =========================================
+
+  const globalActive =
+    globalActiveFromAPI !== null &&
+    globalActiveFromAPI >= 0
+      ? globalActiveFromAPI
+      : globalCases !== null &&
+        globalDeaths !== null &&
+        globalRecovered !== null
+      ? Math.max(
+          globalCases -
+            globalDeaths -
+            globalRecovered,
+          0
+        )
+      : null;
 
   // =========================================
   // RENDER
@@ -236,23 +430,30 @@ function Dashboard() {
 
       </section>
 
-
       {/* =====================================
           ERROR MESSAGE
       ====================================== */}
 
       {error && (
-
         <div className="dashboard-container">
 
           <div className="dashboard-error">
-            {error}
+
+            <span>
+              {error}
+            </span>
+
+            <button
+              type="button"
+              onClick={fetchDashboardData}
+            >
+              Retry
+            </button>
+
           </div>
 
         </div>
-
       )}
-
 
       {/* =====================================
           LOADING
@@ -282,10 +483,46 @@ function Dashboard() {
 
             <div className="dashboard-container">
 
-              <h2 className="section-heading">
-                Global COVID-19 Statistics
-              </h2>
+              {/* SECTION HEADER */}
 
+              <div className="dashboard-section-header">
+
+                <div>
+
+                  <h2 className="section-heading">
+                    Global COVID-19 Statistics
+                  </h2>
+
+                  {lastUpdated && (
+                    <p className="last-updated">
+                      🕒 Last updated:{" "}
+                      {lastUpdated.toLocaleTimeString(
+                        "en-IN",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        }
+                      )}
+                    </p>
+                  )}
+
+                </div>
+
+                <button
+                  type="button"
+                  className="refresh-dashboard-btn"
+                  onClick={fetchDashboardData}
+                  disabled={loading}
+                >
+                  {loading
+                    ? "⟳ Refreshing..."
+                    : "↻ Refresh Data"}
+                </button>
+
+              </div>
+
+              {/* STATISTICS CARDS */}
 
               <div className="stats-grid">
 
@@ -305,20 +542,13 @@ function Dashboard() {
 
                     <p>
                       {formatNumber(
-                        getValue(
-                          globalData,
-                          [
-                            "cases",
-                            "totalCases",
-                          ]
-                        )
+                        globalCases
                       )}
                     </p>
 
                   </div>
 
                 </div>
-
 
                 {/* TOTAL DEATHS */}
 
@@ -336,20 +566,13 @@ function Dashboard() {
 
                     <p>
                       {formatNumber(
-                        getValue(
-                          globalData,
-                          [
-                            "deaths",
-                            "totalDeaths",
-                          ]
-                        )
+                        globalDeaths
                       )}
                     </p>
 
                   </div>
 
                 </div>
-
 
                 {/* RECOVERED */}
 
@@ -367,20 +590,13 @@ function Dashboard() {
 
                     <p>
                       {formatNumber(
-                        getValue(
-                          globalData,
-                          [
-                            "recovered",
-                            "totalRecovered",
-                          ]
-                        )
+                        globalRecovered
                       )}
                     </p>
 
                   </div>
 
                 </div>
-
 
                 {/* ACTIVE CASES */}
 
@@ -398,13 +614,7 @@ function Dashboard() {
 
                     <p>
                       {formatNumber(
-                        getValue(
-                          globalData,
-                          [
-                            "active",
-                            "activeCases",
-                          ]
-                        )
+                        globalActive
                       )}
                     </p>
 
@@ -417,7 +627,6 @@ function Dashboard() {
             </div>
 
           </section>
-
 
           {/* =================================
               GLOBAL COVID-19 OVERVIEW
@@ -438,18 +647,17 @@ function Dashboard() {
                   </h2>
 
                   <p>
-                    Overview of worldwide
-                    COVID-19 statistics
+                    Worldwide COVID-19 cases and
+                    deaths over time
                   </p>
 
                 </div>
 
-
-                {/* CHART */}
+                {/* HISTORICAL CHART */}
 
                 <div className="chart-container">
 
-                  {chartData.length > 0 ? (
+                  {historyData.length > 0 ? (
 
                     <ResponsiveContainer
                       width="100%"
@@ -457,7 +665,7 @@ function Dashboard() {
                     >
 
                       <LineChart
-                        data={chartData}
+                        data={historyData}
                         margin={{
                           top: 10,
                           right: 20,
@@ -471,7 +679,10 @@ function Dashboard() {
                         />
 
                         <XAxis
-                          dataKey="name"
+                          dataKey="date"
+                          tickFormatter={(value) =>
+                            value.slice(0, 7)
+                          }
                         />
 
                         <YAxis />
@@ -480,56 +691,28 @@ function Dashboard() {
 
                         <Legend />
 
-
                         {/* CASES */}
 
                         <Line
                           type="monotone"
-                          dataKey="Cases"
+                          dataKey="cases"
                           name="Cases"
                           stroke="#2563eb"
-                          strokeWidth={3}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 5 }}
                         />
-
 
                         {/* DEATHS */}
 
                         <Line
                           type="monotone"
-                          dataKey="Deaths"
+                          dataKey="deaths"
                           name="Deaths"
                           stroke="#dc2626"
-                          strokeWidth={3}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
-                        />
-
-
-                        {/* RECOVERED */}
-
-                        <Line
-                          type="monotone"
-                          dataKey="Recovered"
-                          name="Recovered"
-                          stroke="#16a34a"
-                          strokeWidth={3}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
-                        />
-
-
-                        {/* ACTIVE */}
-
-                        <Line
-                          type="monotone"
-                          dataKey="Active"
-                          name="Active"
-                          stroke="#f59e0b"
-                          strokeWidth={3}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 5 }}
                         />
 
                       </LineChart>
@@ -538,9 +721,18 @@ function Dashboard() {
 
                   ) : (
 
-                    <p>
-                      No chart data available.
-                    </p>
+                    <div className="no-countries">
+
+                      <span>
+                        📊
+                      </span>
+
+                      <p>
+                        Historical data is currently
+                        unavailable.
+                      </p>
+
+                    </div>
 
                   )}
 
@@ -551,7 +743,6 @@ function Dashboard() {
             </div>
 
           </section>
-
 
           {/* =================================
               TOP 10 COUNTRIES
@@ -584,7 +775,6 @@ function Dashboard() {
                 </div>
 
               </div>
-
 
               {/* COUNTRY TABLE */}
 
@@ -620,7 +810,6 @@ function Dashboard() {
 
                 </div>
 
-
                 {/* COUNTRY DATA */}
 
                 {topCountries.length > 0 ? (
@@ -629,19 +818,29 @@ function Dashboard() {
                     (item, index) => {
 
                       /*
-                       * Supports different backend
-                       * response structures.
+                       * Supports:
+                       *
+                       * item.country
+                       * item.data.country
                        */
 
+                      const countryData =
+                        item?.data &&
+                        typeof item.data ===
+                          "object"
+                          ? item.data
+                          : item;
+
                       const countryName =
-                        item.country ||
-                        item.data?.country ||
+                        item?.country ||
+                        item?.name ||
+                        countryData?.country ||
+                        countryData?.name ||
                         "Unknown";
 
-
-                      const countryData =
-                        item.data || item;
-
+                      // =================================
+                      // CASES
+                      // =================================
 
                       const cases =
                         getValue(
@@ -649,9 +848,15 @@ function Dashboard() {
                           [
                             "cases",
                             "totalCases",
+                            "TotalCases",
+                            "confirmed",
+                            "Confirmed",
                           ]
                         );
 
+                      // =================================
+                      // DEATHS
+                      // =================================
 
                       const deaths =
                         getValue(
@@ -659,19 +864,59 @@ function Dashboard() {
                           [
                             "deaths",
                             "totalDeaths",
+                            "TotalDeaths",
+                            "Deaths",
                           ]
                         );
 
+                      // =================================
+                      // RECOVERED FROM API
+                      // =================================
 
-                      const recovered =
+                      const recoveredFromAPI =
                         getValue(
                           countryData,
                           [
                             "recovered",
                             "totalRecovered",
+                            "TotalRecovered",
+                            "Recovered",
                           ]
                         );
 
+                      // =================================
+                      // ACTIVE FROM API
+                      // =================================
+
+                      const activeFromAPI =
+                        getValue(
+                          countryData,
+                          [
+                            "active",
+                            "activeCases",
+                            "ActiveCases",
+                            "Active",
+                          ]
+                        );
+
+                      // =================================
+                      // CALCULATE RECOVERED
+                      // =================================
+
+                      const recovered =
+                        recoveredFromAPI !== null &&
+                        recoveredFromAPI > 0
+                          ? recoveredFromAPI
+                          : cases !== null &&
+                            deaths !== null &&
+                            activeFromAPI !== null
+                          ? Math.max(
+                              cases -
+                                deaths -
+                                activeFromAPI,
+                              0
+                            )
+                          : recoveredFromAPI;
 
                       return (
 
@@ -697,7 +942,6 @@ function Dashboard() {
 
                           </div>
 
-
                           {/* COUNTRY */}
 
                           <div className="country-name">
@@ -712,7 +956,6 @@ function Dashboard() {
 
                           </div>
 
-
                           {/* CASES */}
 
                           <div className="cases-value">
@@ -722,7 +965,6 @@ function Dashboard() {
                             )}
 
                           </div>
-
 
                           {/* DEATHS */}
 
@@ -734,7 +976,6 @@ function Dashboard() {
 
                           </div>
 
-
                           {/* RECOVERED */}
 
                           <div className="recovered-value">
@@ -744,7 +985,6 @@ function Dashboard() {
                             )}
 
                           </div>
-
 
                           {/* ACTION */}
 
@@ -767,7 +1007,6 @@ function Dashboard() {
                         </div>
 
                       );
-
                     }
                   )
 

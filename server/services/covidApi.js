@@ -288,6 +288,57 @@ const getTopCountries = async (limit = 10) => {
     }
 };
 
+const getGlobalHistory = async () => {
+    const records = await getWHOData();
+
+    const dailyData = {};
+
+    records.forEach((record) => {
+        const date = record.Date_reported;
+
+        if (!date) {
+            return;
+        }
+
+        if (!dailyData[date]) {
+            dailyData[date] = {
+                date,
+                newCases: 0,
+                newDeaths: 0
+            };
+        }
+
+        dailyData[date].newCases += Number(
+            record.New_cases || 0
+        );
+
+        dailyData[date].newDeaths += Number(
+            record.New_deaths || 0
+        );
+    });
+
+    const history = Object.values(dailyData).sort(
+        (a, b) =>
+            new Date(a.date) - new Date(b.date)
+    );
+
+    let cumulativeCases = 0;
+    let cumulativeDeaths = 0;
+
+    return history.map((item) => {
+        cumulativeCases += item.newCases;
+        cumulativeDeaths += item.newDeaths;
+
+        return {
+            date: item.date,
+            cases: cumulativeCases,
+            deaths: cumulativeDeaths,
+            newCases: item.newCases,
+            newDeaths: item.newDeaths
+        };
+    });
+};
+
 
 // =====================================================
 // EXPORT
@@ -300,6 +351,8 @@ module.exports = {
     getCountryData,
 
     getCountryHistory,
+
+    getGlobalHistory,
 
     getCountriesList,
 

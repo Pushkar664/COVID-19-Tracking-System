@@ -2,6 +2,7 @@ const {
     getGlobalData,
     getCountryData,
     getCountryHistory,
+    getGlobalHistory,
     getCountriesList,
     getTopCountries
 } = require("../services/covidApi");
@@ -71,6 +72,28 @@ const historicalStats = async (req, res) => {
     }
 };
 
+// Global historical statistics
+const globalHistoricalStats = async (req, res) => {
+    try {
+        const data = await getGlobalHistory();
+
+        res.status(200).json({
+            success: true,
+            data
+        });
+    } catch (error) {
+        console.error(
+            "Global historical COVID data error:",
+            error.message
+        );
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to fetch global historical data"
+        });
+    }
+};
+
 
 // List available countries
 const listCountries = async (req, res) => {
@@ -113,6 +136,7 @@ module.exports = {
     globalStats,
     countryStats,
     historicalStats,
+    globalHistoricalStats,
     listCountries,
     topCountries
 };
